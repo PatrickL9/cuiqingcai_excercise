@@ -1,0 +1,32 @@
+#!/usr/bin/python3
+import requests
+from lxml import etree
+
+header = {
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
+}
+
+url_r = 'https://ssr1.scrape.center/page/{}'
+
+for i in range(10):
+    url = url_r.format(str(i+1))
+    response = requests.get(url, headers=header)
+    text = response.content.decode('utf-8')
+    html = etree.HTML(text)
+
+    infos = html.xpath('//div[@class="el-col el-col-18 el-col-offset-3"]/div[@class="el-card item m-t is-hover-shadow"]/div[@class="el-card__body"]')
+
+    for info in infos:
+        title = info.xpath('.//a/h2[@class="m-b-sm"]/text()') # 电影名称
+        area = info.xpath('.//div[@class="m-v-sm info"][position()=1]/span[position()=1]/text()') # 电影地区
+        publish_date = info.xpath('.//div[@class="m-v-sm info"][position()=2]/span[position()=1]/text()') # 上映日期
+        duration = info.xpath('.//div[@class="m-v-sm info"][position()=1]/span[position()=3]/text()') # 电影时长
+        score = info.xpath('.//p[@class="score m-t-md m-b-n-sm"]/text()') # 电影评分
+        imt_url = info.xpath('./div/div/a/img/@src') # 电影海报图片链接
+        print(''.join(title),
+              ''.join(area),
+              ''.join(publish_date),
+              ''.join(duration),
+              ''.join(score).strip(),
+              ''.join(imt_url))
+
