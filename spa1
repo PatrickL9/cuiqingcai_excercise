@@ -1,0 +1,56 @@
+#!/usr/bin/python3
+import requests
+import time
+import xlwt
+import json
+from lxml import etree
+
+header = {
+    'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36  \
+                  (KHTML, like Gecko) Chrome/68.0.3440.106 Safari/537.36'
+}
+
+def get_one_page(url, list_info):
+    js = requests.get(url,headers=header) # 读入js链接地址
+    jd = json.loads(js.text) # 把js的文本数据是"keys":value的格式,loads成字典格式变成'keys':value格式
+    # print(js.text)
+    results = jd.get('results') # 通过解析jason文件，找到对应数据是在results这个关键字后面，所以get('results')
+    for result in results:
+        id = result['id'] # 数据编码
+        name = result['name'] # 电影名称
+        alias = result['alias'] # 电影别名
+        cover = result['cover'] # 海报链接
+        cat = result['categories'] # 电影分类
+        publish_date = result['published_at'] # 上映时间
+        duration = result['minute'] # 电影时长
+        score = result['score'] # 电影评分
+        area = result['regions'] # 电影地区
+        list_info.append([id, name, alias, cover, cat, publish_date, duration, score, area])
+
+if __name__ == '__main__':
+    start_time = time.time()
+    # 通过分析XHR，找到该网站是通过js实现的，找到对应js文件的url并读取信息
+    offset = 10
+    url_1 = 'https://spa1.scrape.center/api/movie/?limit=10&offset={}'
+    list_info = []
+
+    # 开始爬取
+    for i in range(10):
+        url = url_1.format(offset*i)
+        # print(url)
+        get_one_page(url, list_info)
+    # # 保存数据
+    workbook = xlwt.Workbook()
+    sheet1 = workbook.add_sheet('电影信息', cell_overwrite_ok=True)
+    # excel输入首行
+    row_0 = ['数据编码', '电影名称', '电影别名', '海报链接', '电影分类', '上映时间','电影时长','电影评分','电影地区']
+    for i in range(len(row_0)):
+        sheet1.write(0, i, row_0[i])
+    # 把list的数据保存进excel
+    for i in range(len(list_info)):
+        for j in range(9):
+            sheet1.write(i + 1, j, list_info[i][j])
+    workbook.save(r'E:\Python\电影信息爬取spa1.xlsx')
+
+    end_time = time.time()
+    print('爬取结束，用时：' + str(end_time - start_time) + '秒')
