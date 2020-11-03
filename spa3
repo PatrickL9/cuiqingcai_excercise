@@ -1,0 +1,75 @@
+#!/usr/bin/python3
+import requests
+import time
+import json
+import xlwt
+
+
+headers = {
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36'
+}
+
+
+# 解析网页
+def parse(url):
+    response = requests.get(url, headers=headers)
+    if response.status_code in(200, 301):
+        return response.text
+    else:
+        print('wrong url')
+
+
+# 读取jason文本信息，并保存进列表
+def get_one_page(response, list_info):
+    js_text = json.loads(response)
+    results = js_text.get('results')
+    for result in results:
+        id = result['id']  # 数据编码
+        name = result['name']  # 电影名称
+        alias = result['alias']  # 电影别名
+        cover = result['cover']  # 海报链接
+        cat = result['categories']  # 电影分类
+        publish_date = result['published_at']  # 上映时间
+        duration = result['minute']  # 电影时长
+        score = result['score']  # 电影评分
+        area = result['regions']  # 电影地区
+        list_info.append([id, name, alias, cover, cat, publish_date, duration, score, area])
+
+
+# 数据保存进excel
+def save_excel(list_info, save_path):
+    workbook = xlwt.Workbook()
+    sheet1 = workbook.add_sheet('电影信息', cell_overwrite_ok=True)
+    row_0 = ['数据编码', '电影名称', '电影别名', '海报链接', '电影分类', '上映时间', '电影时长', '电影评分', '电影地区']
+    # excel表表头输入
+    for i in range(len(row_0)):
+        sheet1.write(0, i, row_0[i])
+    # 把list的数据保存进excel
+    for i in range(len(list_info)):
+        for j in range(9):
+            sheet1.write(i + 1, j, list_info[i][j])
+    workbook.save(save_path)
+    print('保存数据成功！')
+
+
+# 主函数
+def main(url, page, list_info):
+    for offset in range(0, page):
+        js_text = parse(url.format(offset * 10))
+        get_one_page(js_text, list_info)
+        print('爬取第{}页'.format(str(offset + 1)))
+
+
+if __name__ == '__main__':
+    start_time = time.time()
+    url_r = 'https://spa3.scrape.center/api/movie/?limit=10&offset={}'  # 主链接
+    list_result = []  # 空列表，存储数据
+    totle_page = 20  # 翻页页数
+    save_path_xl = r'E:\Python\电影信息爬取spa3.xlsx'  # excel保存路径
+    print('开始爬取！')
+    # 爬取数据
+    main(url_r, totle_page, list_result)
+    # 保存数据
+    save_excel(list_result, save_path_xl)
+    end_time = time.time()
+    print('爬取成功，用时{}秒'.format(str(end_time - start_time)))
